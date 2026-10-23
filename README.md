@@ -1,0 +1,1 @@
+después le agrego detalle
