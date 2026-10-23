@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comunicador Ocular - Modo Charla</title>
+    <!-- Librerías de Handsfree.js para IA de rastreo facial y pestañeo -->
+    <link rel="stylesheet" href="https://unpkg.com">
+    <script src="https://unpkg.com"></script>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --panel-color: #1f2833;
+            --text-color: #c5c6c7;
+            --cian-neon: #00f0ff;
+            --magenta-neon: #ff007f;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            height: 95vh;
+            overflow: hidden;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--panel-color);
+            padding-bottom: 10px;
+        }
+        h1 { margin: 0; font-size: 24px; color: var(--cian-neon); text-shadow: 0 0 10px rgba(0,240,255,0.3); }
+        #estado { font-weight: bold; color: #00ff66; font-size: 14px; }
+        
+        /* Pantalla de Texto */
+        #zona-texto {
+            background: var(--panel-color);
+            border: 3px solid #2f3e46;
+            border-radius: 12px;
+            padding: 15px;
+            font-size: 32px;
+            font-weight: bold;
+            color: white;
+            min-height: 60px;
+            margin: 15px 0;
+            text-align: left;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        /* Contenedor Principal */
+        #interfaz {
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            gap: 15px;
+            flex-grow: 1;
+        }
+
+        /* Teclado de bloques */
+        #teclado-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        #sugerencias {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            height: 50px;
+        }
+        .sug-btn {
+            background: #151c24;
+            border: 2px dashed var(--cian-neon);
+            color: var(--cian-neon);
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        #grilla-letras {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            flex-grow: 1;
+        }
+        
+        /* Botones de acción general */
+        .btn-accion {
+            font-size: 26px;
+            font-weight: bold;
+            color: white;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border: 4px solid #2d3748;
+        }
+        .bloque-letras { background: #243b55; }
+        .bloque-letras:hover { border-color: var(--cian-neon); background: #14283b; box-shadow: 0 0 20px rgba(0,240,255,0.5); }
+        
+        .btn-hablar { background: #a71d3a; grid-column: span 2; height: 70px; }
+        .btn-hablar:hover { border-color: var(--magenta-neon); background: #7e1227; box-shadow: 0 0 20px rgba(255,0,127,0.5); }
+
+        .btn-borrar { background: #343a40; font-size: 20px; }
+        .btn-borrar:hover { border-color: #ffc107; }
+
+        /* Panel Lateral de Chisme Rápido */
+        #panel-chisme {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .btn-chisme {
+            background: #2d1a29;
+            color: #ff9ebb;
+            border: 3px solid #4a2840;
+            font-size: 20px;
+            padding: 15px 10px;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-chisme:hover { border-color: var(--magenta-neon); background: #3d1e33; box-shadow: 0 0 15px rgba(255,0,127,0.4); }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Comunicador Cyber-Assist v1.0</h1>
+        <div id="estado">Iniciando cámara...</div>
+    </header>
+
+    <!-- Zona donde se escribe lo que el iPad va a hablar -->
+    <div id="zona-texto">...</div>
+
+    <div id="interfaz">
+        <!-- Lado Izquierdo: Teclado y Predicción -->
+        <div id="teclado-container">
+            <div id="sugerencias">
+                <button class="btn-accion sug-btn" onclick="insertarPalabra(this.innerText)">HOLA</button>
+                <button class="btn-accion sug-btn" onclick="insertarPalabra(this.innerText)">COMO</button>
+                <button class="btn-accion sug-btn" onclick="insertarPalabra(this.innerText)">VISTE</button>
+                <button class="btn-accion sug-btn" onclick="insertarPalabra(this.innerText)">ESTA</button>
+            </div>
+            
+            <div id="grilla-letras">
+                <button class="btn-accion bloque-letras" data-modo="grupo" data-letras="A B C D E F">A - F</button>
+                <button class="btn-accion bloque-letras" data-modo="grupo" data-letras="G H I J K L">G - L</button>
+                <button class="btn-accion bloque-letras" data-modo="grupo" data-letras="M N O P Q R">M - R</button>
+                <button class="btn-accion bloque-letras" data-modo="grupo" data-letras="S T U V W X Y Z">S - Z</button>
+                
+                <button class="btn-accion btn-borrar" onclick="borrarUltimo()">⬅ BORRAR</button>
+                <button class="btn-accion btn-borrar" onclick="insertarEspacio()">⎵ ESPACIO</button>
+                
+                <button class="btn-accion btn-hablar" onclick="accionarHablar()">🗣️ HABLAR FRASE</button>
+            </div>
+        </div>
+
+        <!-- Lado Derecho: Botonera de Chisme Rápido -->
+        <div id="panel-chisme">
+            <button class="btn-accion btn-chisme" data-texto="¡No te lo puedo creer!">😱 ¡NO TE LO PUEDO CREER!</button>
+            <button class="btn-accion btn-chisme" data-texto="¿En serio me estás diciendo?">👀 ¿EN SERIO?</button>
+            <button class="btn-accion btn-chisme" data-texto="¡Contame más por favor!">🍿 CONTAME MÁS</button>
+            <button class="btn-accion btn-chisme" data-texto="¡Qué fuerte lo que me contás!">💥 ¡QUÉ FUERTE!</button>
+            <button class="btn-accion btn-chisme" data-texto="Me muero de risa, es genial.">😂 ¡QUÉ COMA!</button>
+        </div>
+    </div>
+
+    <script>
+        let textoActual = "";
+        const zonaTexto = document.getElementById('zona-texto');
+        let modoSubgrupo = false;
+        let letrasGuardadas = [];
+
+        // Inicializador de síntesis de voz nativa de iOS
+        function hablar(texto) {
+            window.speechSynthesis.cancel();
+            const mensaje = new SpeechSynthesisUtterance(texto);
+            mensaje.lang = 'es-AR'; // Español de Argentina fluido
+            window.speechSynthesis.speak(mensaje);
+        }
+
+        function actualizarPantalla() {
+            zonaTexto.innerText = textoActual || "⏳ Escribiendo con la mirada...";
+            actualizarSugerenciasDinamicas();
+        }
+
+        function insertarPalabra(palabra) {
+            let palabras = textoActual.trim().split(" ");
+            palabras.pop(); // Saca la última palabra a medio escribir
+            palabras.push(palabra);
+            textoActual = palabras.join(" ") + " ";
+            actualizarPantalla();
+            resetearTeclado();
+        }
+
+        function borrarUltimo() {
+            if (textoActual.length > 0) {
+                textoActual = textoActual.slice(0, -1);
+                actualizarPantalla();
+            }
+        }
+
+        function insertarEspacio() {
+            textoActual += " ";
+            actualizarPantalla();
+        }
+
+        function accionarHablar() {
+            if (textoActual.trim().length > 0) {
+                hablar(textoActual);
+            }
+        }
+
+        // Sistema Predictivo Básico local para chisme
+        const diccionario = ["HOLA", "HOY", "HIJA", "HORRIBLE", "COMO", "CHE", "CUANDO", "CONTAME", "VISTE", "VERDAD", "VIEJA", "VOS", "ESTA", "ENSERIO", "ESTAS", "ESCÚCHAME"];
+        function actualizarSugerenciasDinamicas() {
+            let palabras = textoActual.trim().split(" ");
+            let ultimaPalabra = palabras[palabras.length - 1]?.toUpperCase() || "";
+            let filtradas = diccionario.filter(p => p.startsWith(ultimaPalabra)).slice(0, 4);
+            
+            const sugBotones = document.querySelectorAll('.sug-btn');
+            for(let i=0; i<4; i++) {
+                if (filtradas[i]) {
+                    sugBotones[i].innerText = filtradas[i];
+                    sugBotones[i].style.opacity = "1";
+                } else {
+                    sugBotones[i].style.opacity = "0.2";
+                }
+            }
+        }
+
+        // Manejo de la lógica del teclado por bloques
+        const botonesLetras = document.querySelectorAll('.bloque-letras[data-modo="grupo"]');
+        
+        function manejarSeleccionBloque(elemento) {
+            if (!modoSubgrupo) {
+                // Pasamos a elegir la letra individual dentro del bloque seleccionado
+                let listaLetras = elemento.getAttribute('data-letras').split(" ");
+                letrasGuardadas = listaLetras;
+                modoSubgrupo = true;
+
+                // Dividimos las letras del bloque en los 4 botones principales
+                botonesLetras[0].innerText = listaLetras[0] || "-";
+                botonesLetras[1].innerText = listaLetras[1] || "-";
+                botonesLetras[2].innerText = listaLetras[2] || "-";
